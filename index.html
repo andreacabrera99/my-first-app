@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workout Timer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f0f;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: clamp(1rem, 4.5vw, 1.25rem);
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    /* Setup screen */
+    #setup {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      width: 100%;
+      max-width: 360px;
+      padding: 0 8px;
+    }
+
+    .field {
+      width: 100%;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .time-input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 14px 16px;
+      justify-content: center;
+      transition: box-shadow 0.18s ease, transform 0.12s ease;
+    }
+
+    .time-input input {
+      width: clamp(44px, 15vw, 56px);
+      min-height: 36px;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: clamp(1.6rem, 6vw, 2rem);
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+
+    .time-input input:hover,
+    .time-input:hover {
+      box-shadow: 0 10px 24px rgba(0,0,0,0.55), 0 2px 6px rgba(255,255,255,0.02) inset;
+      transform: translateY(-2px);
+    }
+
+    .time-input input::-webkit-outer-spin-button,
+    .time-input input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+    }
+
+    .time-sep {
+      font-size: clamp(1.6rem, 6vw, 2rem);
+      font-weight: 700;
+      color: #444;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .time-labels {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+      padding: 0 16px;
+      justify-content: center;
+    }
+
+    .time-labels span {
+      width: 56px;
+      text-align: center;
+      font-size: clamp(0.6rem, 2.5vw, 0.75rem);
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: inline-block;
+    }
+
+    .time-labels .sep-space {
+      width: clamp(12px, 6vw, 24px);
+    }
+
+    .field-simple {
+      width: 100%;
+    }
+
+    .field-simple input {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #fff;
+      font-size: clamp(1.6rem, 6vw, 2rem);
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+
+    .field-simple input::-webkit-outer-spin-button,
+    .field-simple input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+    }
+
+    .field-simple input:focus,
+    .time-input:focus-within {
+      border-color: #444;
+    }
+
+    #start-btn {
+      margin-top: 12px;
+      width: 100%;
+      padding: clamp(12px, 4vw, 18px);
+      border: none;
+      border-radius: 14px;
+      background: #fff;
+      color: #000;
+      font-size: clamp(0.9rem, 2.6vw, 1rem);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    #start-btn:hover { opacity: 0.85; }
+    #start-btn:active { opacity: 0.7; }
+
+    /* Timer screen */
+    #timer {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      width: 100%;
+      max-width: 420px;
+      padding: 0 8px;
+    }
+
+    #phase-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 16px;
+      transition: color 0.3s;
+    }
+
+    /* Circular progress */
+    .ring-wrap {
+      position: relative;
+      width: min(78vw, 280px);
+      height: min(78vw, 280px);
+      margin-bottom: 28px;
+    }
+
+    .ring-wrap svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+      display: block;
+    }
+
+    .ring-bg {
+      fill: none;
+      stroke: #1e1e1e;
+      stroke-width: 14;
+    }
+
+    .ring-fg {
+      fill: none;
+      stroke-width: 14;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.5s linear, stroke 0.4s;
+    }
+
+    #time-display {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    #time-display .digits {
+      font-size: clamp(2.4rem, 18vw, 4.5rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      text-align: center;
+      padding: 0 6px;
+      white-space: nowrap;
+    }
+
+    #time-display .rep-count {
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 6px;
+    }
+
+    .ctrl-btn {
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: 700;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .ctrl-btn:hover { opacity: 0.8; }
+    .ctrl-btn:active { transform: scale(0.95); }
+
+    #pause-btn {
+      width: clamp(56px, 16vw, 72px);
+      height: clamp(56px, 16vw, 72px);
+      background: #fff;
+      color: #000;
+      font-size: clamp(1rem, 4vw, 1.4rem);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #reset-btn {
+      width: clamp(44px, 12vw, 52px);
+      height: clamp(44px, 12vw, 52px);
+      background: #1e1e1e;
+      color: #aaa;
+      font-size: clamp(0.9rem, 3.2vw, 1.1rem);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Done screen */
+    #done {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      text-align: center;
+    }
+
+    #done .checkmark {
+      font-size: clamp(3.5rem, 14vw, 5rem);
+      line-height: 1;
+    }
+
+    #done h2 {
+      font-size: clamp(1.5rem, 5vw, 2rem);
+      font-weight: 800;
+    }
+
+    #done p {
+      color: #666;
+      font-size: 0.95rem;
+    }
+
+    #done-btn {
+      margin-top: 8px;
+      padding: 16px 40px;
+      border: none;
+      border-radius: 12px;
+      background: #fff;
+      color: #000;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    #done-btn:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+  <h1>Workout Timer</h1>
+
+  <!-- Setup -->
+  <div id="setup">
+    <div class="field">
+      <label>Work</label>
+      <div class="time-input">
+        <input type="number" id="work-min" min="0" max="59" value="0" placeholder="00">
+        <span class="time-sep">:</span>
+        <input type="number" id="work-sec" min="0" max="59" value="30" placeholder="00">
+      </div>
+      <div class="time-labels">
+        <span>min</span>
+        <span class="sep-space"></span>
+        <span>sec</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Rest</label>
+      <div class="time-input">
+        <input type="number" id="rest-min" min="0" max="59" value="0" placeholder="00">
+        <span class="time-sep">:</span>
+        <input type="number" id="rest-sec" min="0" max="59" value="10" placeholder="00">
+      </div>
+      <div class="time-labels">
+        <span>min</span>
+        <span class="sep-space"></span>
+        <span>sec</span>
+      </div>
+    </div>
+
+    <div class="field field-simple">
+      <label>Reps</label>
+      <input type="number" id="reps-input" min="1" max="99" value="8">
+    </div>
+
+    <button id="start-btn" onclick="startTimer()">Start</button>
+  </div>
+
+  <!-- Timer -->
+  <div id="timer">
+    <div id="phase-label">Work</div>
+
+    <div class="ring-wrap">
+      <svg width="280" height="280" viewBox="0 0 280 280">
+        <circle class="ring-bg" cx="140" cy="140" r="126"/>
+        <circle class="ring-fg" id="ring" cx="140" cy="140" r="126"/>
+      </svg>
+      <div id="time-display">
+        <div class="digits" id="digits">0:30</div>
+        <div class="rep-count" id="rep-count">Rep 1 of 8</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn" id="reset-btn" onclick="resetTimer()" title="Reset">↺</button>
+      <button class="ctrl-btn" id="pause-btn" onclick="togglePause()">⏸</button>
+    </div>
+  </div>
+
+  <!-- Done -->
+  <div id="done">
+    <div class="checkmark">✓</div>
+    <h2>Done!</h2>
+    <p id="done-summary"></p>
+    <button id="done-btn" onclick="resetTimer()">Go Again</button>
+  </div>
+
+  <script>
+    const CIRCUMFERENCE = 2 * Math.PI * 126; // ~791.7
+
+    let workSecs, restSecs, totalReps;
+    let currentRep, phase, remaining, phaseDuration;
+    let interval = null;
+    let paused = false;
+
+    const ring = document.getElementById('ring');
+    ring.style.strokeDasharray = CIRCUMFERENCE;
+
+    function setRingProgress(fraction) {
+      // fraction 1 = full, 0 = empty
+      ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - fraction);
+    }
+
+    function setPhaseColor(isWork) {
+      const color = isWork ? '#4ade80' : '#60a5fa';
+      ring.style.stroke = color;
+      document.getElementById('phase-label').style.color = color;
+    }
+
+    function formatTime(s) {
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      return m > 0 ? `${m}:${sec.toString().padStart(2, '0')}` : `${sec}`;
+    }
+
+    function parseField(id) {
+      return Math.max(0, parseInt(document.getElementById(id).value) || 0);
+    }
+
+    function startTimer() {
+      const wm = parseField('work-min');
+      const ws = parseField('work-sec');
+      const rm = parseField('rest-min');
+      const rs = parseField('rest-sec');
+      workSecs = wm * 60 + ws;
+      restSecs = rm * 60 + rs;
+      totalReps = Math.max(1, parseField('reps-input'));
+
+      if (workSecs === 0) {
+        alert('Work time must be greater than 0.');
+        return;
+      }
+
+      currentRep = 1;
+      phase = 'work';
+      remaining = workSecs;
+      phaseDuration = workSecs;
+
+      show('timer');
+      updateDisplay();
+      resume();
+    }
+
+    function resume() {
+      paused = false;
+      document.getElementById('pause-btn').textContent = '⏸';
+      interval = setInterval(tick, 1000);
+    }
+
+    function tick() {
+      remaining--;
+      updateDisplay();
+
+      if (remaining <= 0) {
+        beep(phase === 'work' ? 880 : 440);
+        advance();
+      }
+    }
+
+    function advance() {
+      if (phase === 'work') {
+        if (restSecs > 0) {
+          phase = 'rest';
+          remaining = restSecs;
+          phaseDuration = restSecs;
+        } else {
+          nextRep();
+        }
+      } else {
+        nextRep();
+      }
+      updateDisplay();
+    }
+
+    function nextRep() {
+      if (currentRep >= totalReps) {
+        finish();
+        return;
+      }
+      currentRep++;
+      phase = 'work';
+      remaining = workSecs;
+      phaseDuration = workSecs;
+    }
+
+    function finish() {
+      clearInterval(interval);
+      interval = null;
+      document.getElementById('done-summary').textContent =
+        `${totalReps} rep${totalReps > 1 ? 's' : ''} · ${formatTime(workSecs)} work · ${formatTime(restSecs)} rest`;
+      show('done');
+    }
+
+    function updateDisplay() {
+      const isWork = phase === 'work';
+      setPhaseColor(isWork);
+      document.getElementById('phase-label').textContent = isWork ? 'Work' : 'Rest';
+      document.getElementById('digits').textContent = formatTime(remaining);
+      document.getElementById('rep-count').textContent = `Rep ${currentRep} of ${totalReps}`;
+      setRingProgress(remaining / phaseDuration);
+    }
+
+    function togglePause() {
+      if (paused) {
+        resume();
+      } else {
+        paused = true;
+        clearInterval(interval);
+        interval = null;
+        document.getElementById('pause-btn').textContent = '▶';
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(interval);
+      interval = null;
+      paused = false;
+      show('setup');
+    }
+
+    function show(screen) {
+      document.getElementById('setup').style.display = 'none';
+      document.getElementById('timer').style.display = 'none';
+      document.getElementById('done').style.display = 'none';
+      document.getElementById(screen).style.display = 'flex';
+    }
+
+    // Simple beep using Web Audio API
+    function beep(freq) {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.3);
+      } catch (e) {}
+    }
+  </script>
+</body>
+</html>
