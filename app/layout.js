@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Workout Timer",
-  description: "Interval timer for workouts",
+  title: "FitTrack",
+  description: "Health and fitness tracking for athletes and coaches",
 };
 
 export default function RootLayout({ children }) {
